@@ -15,26 +15,17 @@ module RSpec
 
           if example_block
             example_block = Proc.new do
-              begin
-                postmortem_hook = TracePoint.new(:raise){|tp|
-                  exc = tp.raised_exception
-                  frames = DEBUGGER__.capture_frames(nil)
-                  frames.delete_if{|e| /(exe|bin|lib)\/rspec/ =~ e.path}
-                  exc.instance_variable_set(:@__debugger_postmortem_frames, frames)
-                }
+              e = DEBUGGER__::SESSION.capture_exception_frames /(exe|bin|lib)\/rspec/ do
+                self.instance_exec(&orig_example_block)
+              end
 
-                postmortem_hook.enable
-                begin
-                  self.instance_eval(&orig_example_block)
-                ensure
-                  postmortem_hook.disable
-                end
-
-              rescue Exception => e
-                STDERR.puts "Failure:"
-                STDERR.puts e.message
+              if e
+                STDERR.puts <<~MSG
+                Failure:
+                #{e.message}
+                MSG
                 DEBUGGER__::SESSION.enter_postmortem_session e
-                raise
+                raise e
               end
             end # Proc.new
           end
@@ -42,8 +33,8 @@ module RSpec
           super
         end
       end
+
       prepend DebugAtStop
     end
   end
 end
-
