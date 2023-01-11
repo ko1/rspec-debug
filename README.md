@@ -20,6 +20,12 @@ Or install it yourself as:
 
 ## Usage
 
+### Setup
+
+Add a line `require 'rspec/debug'` into your test files, if your project doesn't use `Bundler.require`.
+
+### Running tests
+
 Add `RSPEC_DEBUG=1` environment variable for `rspec` (or `rake spec` and so on).
 
 ```
